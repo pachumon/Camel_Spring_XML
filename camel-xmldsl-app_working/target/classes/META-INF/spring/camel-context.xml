@@ -11,15 +11,21 @@
         
 		<camelContext id="mainContext" xmlns="http://camel.apache.org/schema/spring">
 						        
-		        <route>
-				    <from uri="file://data/input" /> <!-- INPUT -->
-				    <process ref="myFileProcessor" /> <!-- PROCESS -->
-				    <to uri="file://data/outputUpperCase" /> <!-- OUTPUT -->
-				    <transform>
-        				<simple>${body.toLowerCase()}</simple>
-    				</transform>
-    				<to uri="file://data/outputLowerCase" />				    
-				</route>		
+		        <route id="log-route">
+		          <from uri="timer:foo?period=5s"/>
+		          <script>
+		            	<groovy>
+		            		<![CDATA[import groovy.json.*
+		            		import java.utils.*;
+		            		exchange.setProperty("status","kumbidi")
+		            		]]>
+		            	</groovy>
+		            </script>
+		            <setBody>
+		                <simple>Hello from Fabric based Camel route!</simple>
+		            </setBody>
+		            <log message=">>> Body: ${body} Property: ${exchange.getProperty(status)}"/>
+		        </route>	
 							
 		</camelContext>
 </beans>
