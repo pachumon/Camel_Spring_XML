@@ -7,13 +7,19 @@
           http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
           http://camel.apache.org/schema/spring 
           https://camel.apache.org/schema/spring/camel-spring-4.2.0.xsd">
+		<bean id="myFileProcessor" class="com.pachumon.FileProcessor" />
+        
 		<camelContext id="mainContext" xmlns="http://camel.apache.org/schema/spring">
-				<route id="log-route">
-		          <from uri="timer:foo?period=5s"/>
-		            <setBody>
-		                <simple>Hello from Fabric based Camel route!</simple>
-		            </setBody>
-		            <log message=">>> ${body}"/>
-		        </route>
+						        
+		        <route>
+				    <from uri="file://data/input" /> <!-- INPUT -->
+				    <process ref="myFileProcessor" /> <!-- PROCESS -->
+				    <to uri="file://data/outputUpperCase" /> <!-- OUTPUT -->
+				    <transform>
+        				<simple>${body.toLowerCase()}</simple>
+    				</transform>
+    				<to uri="file://data/outputLowerCase" />				    
+				</route>		
+							
 		</camelContext>
 </beans>
