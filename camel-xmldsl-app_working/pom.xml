@@ -1,0 +1,74 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.pachumon</groupId>
+  <artifactId>camel-xmldsl-app</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+   <dependencies>
+	<!-- https://mvnrepository.com/artifact/org.apache.camel/camel-core -->
+	<dependency>
+	    <groupId>org.apache.camel</groupId>
+	    <artifactId>camel-core</artifactId>
+	    <version>3.20.0</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/org.apache.camel/camel-spring -->
+	<dependency>
+	    <groupId>org.apache.camel</groupId>
+	    <artifactId>camel-spring</artifactId>
+	    <version>3.20.0</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/org.springframework/spring-context -->
+	<dependency>
+	    <groupId>org.springframework</groupId>
+	    <artifactId>spring-context</artifactId>
+	    <version>5.3.25</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/org.apache.camel/camel-main -->
+	<dependency>
+	    <groupId>org.apache.camel</groupId>
+	    <artifactId>camel-main</artifactId>
+	    <version>3.20.0</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/org.apache.camel/camel-spring-main -->
+	<dependency>
+	    <groupId>org.apache.camel</groupId>
+	    <artifactId>camel-spring-main</artifactId>
+	    <version>3.20.0</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/org.apache.camel/camel-spring-xml -->
+	<dependency>
+	    <groupId>org.apache.camel</groupId>
+	    <artifactId>camel-spring-xml</artifactId>
+	    <version>3.20.0</version>
+	</dependency>
+	<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>2.0.12</version>
+</dependency>
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-simple</artifactId>
+    <version>2.0.12</version>
+</dependency>
+
+
+	<!-- https://mvnrepository.com/artifact/org.apache.camel/camel-stream -->
+	
+  </dependencies>
+     <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.camel</groupId>
+        <artifactId>camel-maven-plugin</artifactId>
+        <version>4.5.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-fatjar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
