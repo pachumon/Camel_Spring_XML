@@ -8,16 +8,49 @@
           http://camel.apache.org/schema/spring 
           https://camel.apache.org/schema/spring/camel-spring-4.2.0.xsd">
 		<bean id="myFileProcessor" class="com.pachumon.FileProcessor" />
-        <bean id="properties" class="org.apache.camel.component.properties.PropertiesComponent">
+		<bean id="properties" class="org.apache.camel.component.properties.PropertiesComponent">
     		<property name="location" value="classpath:appprop.properties"/>
 		</bean>
+        
 		<camelContext id="mainContext" xmlns="http://camel.apache.org/schema/spring">
-				<route id="log-route">				
-		          <from uri="timer:foo?period=5s"/>
-		            <setBody>
-		                <simple>Hello from Fabric based Camel route!</simple>
-		            </setBody>
-		            <log message=">>> ${body} property: {{api_baseurl}} {{org_name}}"/>
-		        </route>
+			<onException>
+				<exception>java.lang.Exception</exception>
+				<handled>
+					<constant>true</constant>
+				</handled>
+				<setProperty name="loggerInfo">
+					<simple>${exception.message}</simple>
+				</setProperty>
+				<to uri="direct:logStmts"/>
+			</onException>
+						        
+		    <route id="StartStaleRepoCheck">
+				<from uri="timer://TriggerStaleRepoCheck?repeatCount=0&amp;period=60s"/>	
+				<log message=">>> logging property: {{api_baseurl}} {{org_name}}"/>	
+				<to uri="direct:SplitAndLoop"/>	    
+			</route>
+			
+			<route id="SplitAndLoop">
+  				<from uri="direct:SplitAndLoop"/>
+  				<log message=">>> invoked SplitAndLoop route"/>
+  				<split parallelProcessing="true">
+  					<simple>{{org_name}}</simple>
+  					<to uri="direct:invokeRepoCheck"/>
+  				</split>
+  			</route>
+  			
+  			<route id="invokeRepoCheck">
+  				<from uri="direct:invokeRepoCheck"/>
+  				<delay>
+        			<constant>2000</constant>
+    			</delay>
+  				<log message=">>> ${date-with-timezone:now:IST:yyyy-MM-dd'T'HH:mm:ss} invoked invokeRepoCheck route ${exchange.getMessage().getBody()}"/>  				
+  			</route>
+			
+			<route id="logStmts">
+				<from uri="direct:logStmts" />
+				<log logName="FileProcessorLog" loggingLevel="ERROR" message="${exchange.getProperty('loggerInfo')}" />
+			</route>
+							
 		</camelContext>
 </beans>
