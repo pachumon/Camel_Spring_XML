@@ -33,18 +33,20 @@
 			<route id="SplitAndLoop">
   				<from uri="direct:SplitAndLoop"/>
   				<log message=">>> invoked SplitAndLoop route"/>
-  				<split parallelProcessing="true">
+  				<split parallelProcessing="false">
   					<simple>{{org_name}}</simple>
   					<to uri="direct:invokeRepoCheck"/>
   				</split>
   			</route>
   			
   			<route id="invokeRepoCheck">
-  				<from uri="direct:invokeRepoCheck"/>
+  				<from uri="direct:invokeRepoCheck"/>  				
   				<delay>
-        			<constant>2000</constant>
+        			<constant>1000</constant>
     			</delay>
-  				<log message=">>> ${date-with-timezone:now:IST:yyyy-MM-dd'T'HH:mm:ss} invoked invokeRepoCheck route ${exchange.getMessage().getBody()}"/>  				
+  				<log message=">>> ${date-with-timezone:now:IST:yyyy-MM-dd'T'HH:mm:ss} invoked invokeRepoCheck route for planetID :${body}"/>
+  				<toD uri="{{api_baseurl}}/${body}?httpMethod=GET"/>
+  				<log message=">>> ${body}"/>				
   			</route>
 			
 			<route id="logStmts">
