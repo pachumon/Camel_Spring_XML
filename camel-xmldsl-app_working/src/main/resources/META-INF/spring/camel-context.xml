@@ -45,7 +45,21 @@
         			<constant>1000</constant>
     			</delay>
   				<log message=">>> ${date-with-timezone:now:IST:yyyy-MM-dd'T'HH:mm:ss} invoked invokeRepoCheck route for planetID :${body}"/>
-  				<toD uri="{{api_baseurl}}/${body}?httpMethod=GET"/>
+  				<setHeader name="Content-Type">
+        			<constant><![CDATA[application/json]]></constant>
+    			</setHeader><setHeader name="Content-Type">
+        			<constant><![CDATA[application/json]]></constant>
+    			</setHeader>
+    			<setHeader name="Accept">
+        			<constant><![CDATA[application/json]]></constant>
+    			</setHeader>
+    			<setHeader name="Exchange.HTTP_METHOD">
+        			<constant><![CDATA[GET]]></constant>
+    			</setHeader>
+    			<setHeader name="Exchange.HTTP_URI">
+        			<simple><![CDATA[{{api_baseurl}}/${body}]]></simple>
+    			</setHeader>
+  				<toD uri="http:host"/>
   				<log message=">>> ${body}"/>				
   			</route>
 			
