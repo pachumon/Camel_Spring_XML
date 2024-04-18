@@ -1,72 +1,132 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:camel="http://camel.apache.org/schema/spring"
-       xsi:schemaLocation="
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:camel="http://camel.apache.org/schema/spring"
+	xsi:schemaLocation="
           http://www.springframework.org/schema/beans
           http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
           http://camel.apache.org/schema/spring 
           https://camel.apache.org/schema/spring/camel-spring-4.2.0.xsd">
-		<bean id="myFileProcessor" class="com.pachumon.FileProcessor" />
-		<bean id="properties" class="org.apache.camel.component.properties.PropertiesComponent">
-    		<property name="location" value="classpath:appprop.properties"/>
-		</bean>
-        
-		<camelContext id="mainContext" xmlns="http://camel.apache.org/schema/spring">
-			<onException>
-				<exception>java.lang.Exception</exception>
-				<handled>
-					<constant>true</constant>
-				</handled>
-				<setProperty name="loggerInfo">
-					<simple>${exception.message}</simple>
-				</setProperty>
-				<to uri="direct:logStmts"/>
-			</onException>
-						        
-		    <route id="StartStaleRepoCheck">
-				<from uri="timer://TriggerStaleRepoCheck?repeatCount=0&amp;period=60s"/>	
-				<log message=">>> logging property: {{api_baseurl}} {{org_name}}"/>	
-				<to uri="direct:SplitAndLoop"/>	    
-			</route>
+	<bean id="myFileProcessor" class="com.pachumon.FileProcessor" />
+	<bean id="properties"
+		class="org.apache.camel.component.properties.PropertiesComponent">
+		<property name="location"
+			value="classpath:appprop.properties" />
+	</bean>
+
+	<camelContext id="mainContext"
+		xmlns="http://camel.apache.org/schema/spring">
+		<onException>
+			<exception>java.lang.Exception</exception>
+			<handled>
+				<constant>true</constant>
+			</handled>
+			<setProperty name="loggerInfo">
+				<simple>${exception.message}</simple>
+			</setProperty>
+			<to uri="direct:logStmts" />
+		</onException>
+
+		<route id="StartStaleRepoCheck">
+			<from
+				uri="timer://TriggerStaleRepoCheck?repeatCount=0&amp;period=60s" />
+			<log message=">>> logging property: {{api_baseurl}} {{org_name}}" />
+			<to uri="direct:SplitAndLoop" />
+		</route>
+
+		<route id="SplitAndLoop">
+			<from uri="direct:SplitAndLoop" />
+			<log message=">>> invoked SplitAndLoop route" />
+			<split parallelProcessing="false">
+				<simple>{{org_name}}</simple>
+				<to uri="direct:invokeRepoCheck" />
+			</split>
+		</route>
+
+		<route id="invokeRepoCheck">
+			<from uri="direct:invokeRepoCheck" />
+			<delay>
+				<constant>1000</constant>
+			</delay>
+			<log
+				message=">>> ${date-with-timezone:now:IST:yyyy-MM-dd'T'HH:mm:ss} invoked invokeRepoCheck route for planetID :${body}" />
+
 			
-			<route id="SplitAndLoop">
-  				<from uri="direct:SplitAndLoop"/>
-  				<log message=">>> invoked SplitAndLoop route"/>
-  				<split parallelProcessing="false">
-  					<simple>{{org_name}}</simple>
-  					<to uri="direct:invokeRepoCheck"/>
-  				</split>
-  			</route>
-  			
-  			<route id="invokeRepoCheck">
-  				<from uri="direct:invokeRepoCheck"/>  				
-  				<delay>
-        			<constant>1000</constant>
-    			</delay>
-  				<log message=">>> ${date-with-timezone:now:IST:yyyy-MM-dd'T'HH:mm:ss} invoked invokeRepoCheck route for planetID :${body}"/>
-  				<setHeader name="Content-Type">
-        			<constant><![CDATA[application/json]]></constant>
-    			</setHeader><setHeader name="Content-Type">
-        			<constant><![CDATA[application/json]]></constant>
-    			</setHeader>
-    			<setHeader name="Accept">
-        			<constant><![CDATA[application/json]]></constant>
-    			</setHeader>
-    			<setHeader name="Exchange.HTTP_METHOD">
-        			<constant><![CDATA[GET]]></constant>
-    			</setHeader>
-    			<setHeader name="Exchange.HTTP_URI">
-        			<simple><![CDATA[{{api_baseurl}}/${body}]]></simple>
-    			</setHeader>
-  				<toD uri="http:host"/>
-  				<log message=">>> ${body}"/>				
-  			</route>
-			
-			<route id="logStmts">
-				<from uri="direct:logStmts" />
-				<log logName="FileProcessorLog" loggingLevel="ERROR" message="${exchange.getProperty('loggerInfo')}" />
-			</route>
-							
-		</camelContext>
+			<setHeader name="Content-Type">
+				<constant><![CDATA[application/json]]></constant>
+			</setHeader>
+			<setHeader name="Accept">
+				<constant><![CDATA[application/json]]></constant>
+			</setHeader>
+			<setHeader name="Exchange.HTTP_METHOD">
+				<constant><![CDATA[GET]]></constant>
+			</setHeader>
+			<setHeader name="Exchange.HTTP_URI">
+				<simple><![CDATA[{{api_baseurl}}/${body}]]></simple>
+			</setHeader>
+			<script>
+				<groovy>
+		            	<![CDATA[
+		            	import groovy.json.*
+		            	import java.utils.*;
+		            	import org.apache.camel.Exchange;
+		            	
+		            	Map responseMap = new HashMap();
+		            	responseMap.put("ResponseCode","")
+		            	responseMap.put("Response","")
+		            	responseMap.put("Error","")
+		            	responseMap.put("Content-type",exchange.getMessage().getHeader("Content-Type",String.class))
+		            	responseMap.put("Accept",exchange.getMessage().getHeader("Accept",String.class))
+		            	responseMap.put("HTTP_METHOD",exchange.getMessage().getHeader(Exchange.HTTP_METHOD,String.class))
+		            	responseMap.put("HTTP_URI",exchange.getMessage().getHeader(Exchange.HTTP_URI,String.class))
+		            	exchange.setProperty("responseMap",responseMap)
+		            	
+		            	exchange.setProperty("Status","initialStatus")
+		            	]]>
+		            </groovy>
+			</script>
+			<toD uri="http:host" />
+			<script>
+				<groovy>
+		            	<![CDATA[
+		            	import groovy.json.*
+		            	import java.utils.*;
+		            	import org.apache.camel.Exchange;
+		            	import org.json.simple.JSONObject;
+		            	
+		            	def healthCheckResponseCode = exchange.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE,Integer.class)
+		            	def endPointUrl = exchange.getMessage().getHeader(Exchange.HTTP_URI,String.class)
+		            	Map responseMap = exchange.getProperty("responseMap")
+		            	def Status = exchange.getProperty("Status")
+		            	responseMap.put("ResponseCode",healthCheckResponseCode)
+		            	exchange.setProperty("responseMap",responseMap)
+		            	
+		            	if(healthCheckResponseCode != 200)
+		            	{
+		            		exchange.setProperty("Status", endPointUrl + "is Down" )
+		            		throw new Exception("Endpoint : " + endPointUrl + " | Status Code : " + healthCheckResponseCode)
+		            	}
+		            	
+		            	def apiResponse = exchange.getMessage().getBody(String.class)
+		            	responseMap.put("Response",apiResponse)
+		            	apiResponse = JSONObject.escape(apiResponse)
+		            	exchange.setProperty("apiResponse",apiResponse)
+		            	exchange.setProperty("responseMap",responseMap)
+		            	
+		            	exchange.setProperty("rescode",responseMap)
+		            	]]>
+		            </groovy>
+			</script>
+			<log message=">>> ${body}" />
+			<log
+				message=">>> ${exchange.getProperty(Status)}  ${exchange.getProperty(rescode)}" />
+		</route>
+
+		<route id="logStmts">
+			<from uri="direct:logStmts" />
+			<log logName="FileProcessorLog" loggingLevel="ERROR"
+				message="${exchange.getProperty('loggerInfo')}" />
+		</route>
+
+	</camelContext>
 </beans>
