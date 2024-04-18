@@ -58,11 +58,14 @@
 			<setHeader name="Accept">
 				<constant><![CDATA[application/json]]></constant>
 			</setHeader>
+			<setHeader name="Authorization">
+				<simple>Bearer {{api_token}}</simple>
+			</setHeader>
 			<setHeader name="Exchange.HTTP_METHOD">
 				<constant><![CDATA[GET]]></constant>
 			</setHeader>
 			<setHeader name="Exchange.HTTP_URI">
-				<simple><![CDATA[{{api_baseurl}}/${body}]]></simple>
+				<simple><![CDATA[{{api_baseurl}}]]></simple>
 			</setHeader>
 			<script>
 				<groovy>
