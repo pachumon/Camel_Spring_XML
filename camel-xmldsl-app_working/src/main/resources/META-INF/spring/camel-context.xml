@@ -51,7 +51,7 @@
 			<log
 				message=">>> ${date-with-timezone:now:IST:yyyy-MM-dd'T'HH:mm:ss} invoked invokeRepoCheck route for planetID :${body}" />
 
-			
+
 			<setHeader name="Content-Type">
 				<constant><![CDATA[application/json]]></constant>
 			</setHeader>
@@ -97,23 +97,24 @@
 		            	import org.apache.camel.Exchange;
 		            	import org.json.simple.JSONObject;
 		            	
-		            	def healthCheckResponseCode = exchange.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE,Integer.class)
+		            	def apiResponseCode = exchange.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE,Integer.class)
 		            	def endPointUrl = exchange.getMessage().getHeader(Exchange.HTTP_URI,String.class)
 		            	Map responseMap = exchange.getProperty("responseMap")
 		            	def Status = exchange.getProperty("Status")
-		            	responseMap.put("ResponseCode",healthCheckResponseCode)
+		            	responseMap.put("ResponseCode",apiResponseCode)
 		            	exchange.setProperty("responseMap",responseMap)
 		            	
-		            	if(healthCheckResponseCode != 200)
+		            	if(apiResponseCode != 200)
 		            	{
 		            		exchange.setProperty("Status", endPointUrl + "is Down" )
-		            		throw new Exception("Endpoint : " + endPointUrl + " | Status Code : " + healthCheckResponseCode)
+		            		throw new Exception("Endpoint : " + endPointUrl + " | Status Code : " + apiResponseCode)
 		            	}
 		            	
 		            	def apiResponse = exchange.getMessage().getBody(String.class)
 		            	responseMap.put("Response",apiResponse)
 		            	apiResponse = JSONObject.escape(apiResponse)
 		            	exchange.setProperty("apiResponse",apiResponse)
+		            	exchange.setProperty("apiResponseCode",apiResponseCode)
 		            	exchange.setProperty("responseMap",responseMap)
 		            	
 		            	exchange.setProperty("rescode",responseMap)
@@ -121,8 +122,22 @@
 		            </groovy>
 			</script>
 			<log message=">>> ${body}" />
-			<log
-				message=">>> ${exchange.getProperty(Status)}  ${exchange.getProperty(rescode)}" />
+			<log message=">>> ${exchange.getProperty(apiResponseCode)} " />
+			<to uri="direct:manipulateJson" />
+		</route>
+
+		<route id="manipulateJson">
+			<from uri="direct:manipulateJson" />
+			<log message=">>> invoked SplitAndLoop for Json array" />
+
+			<split>
+
+				<jsonpath>$.[*]</jsonpath>
+				<log message=">>> ${body} \n \n \n" />
+				<delay>
+					<constant>3000</constant>
+				</delay>
+			</split>
 		</route>
 
 		<route id="logStmts">
