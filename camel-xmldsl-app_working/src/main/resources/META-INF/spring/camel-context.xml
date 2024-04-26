@@ -97,6 +97,9 @@
 		            	import org.apache.camel.Exchange;
 		            	import org.json.simple.JSONObject;
 		            	
+		            	def repoUrlList = []		            	
+		            	exchange.setProperty("repoUrlList",repoUrlList)
+		            	
 		            	def apiResponseCode = exchange.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE,Integer.class)
 		            	def endPointUrl = exchange.getMessage().getHeader(Exchange.HTTP_URI,String.class)
 		            	Map responseMap = exchange.getProperty("responseMap")
@@ -121,7 +124,7 @@
 		            	]]>
 		            </groovy>
 			</script>
-			<log message=">>> ${body}" />
+
 			<log message=">>> ${exchange.getProperty(apiResponseCode)} " />
 			<to uri="direct:manipulateJson" />
 		</route>
@@ -133,9 +136,33 @@
 			<split>
 
 				<jsonpath>$.[*]</jsonpath>
-				<log message=">>> ${body} \n \n \n" />
+				<log message=">>> ${body.[url]} \n \n \n" />
+				<script>
+					<groovy>
+		            	<![CDATA[
+		            	import groovy.json.*
+		            	import java.utils.*;
+		            	import org.apache.camel.Exchange;
+		            	import org.json.simple.JSONObject;
+		            	
+		            	def dummyprop = exchange.getMessage().getBody()
+		            	def repoUrlList = exchange.getProperty('repoUrlList')
+		            	repoUrlList << dummyprop['url']
+		            	exchange.setProperty("repoUrlList",repoUrlList)
+		            	exchange.setProperty("dummyprop",repoUrlList)
+		            	]]>
+		            </groovy>
+				</script>
+				<log message=">>>dummy prop ${exchange.getProperty('dummyprop')}" />
 				<delay>
-					<constant>3000</constant>
+					<constant>1000</constant>
+				</delay>
+			</split>
+			<split>
+				<simple>${exchange.getProperty('repoUrlList')}</simple>
+				<log message=">>> repo_url : ${body} \n \n \n" />							
+				<delay>
+					<constant>1000</constant>
 				</delay>
 			</split>
 		</route>
