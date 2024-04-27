@@ -39,18 +39,89 @@
 			<log message=">>> invoked SplitAndLoop route" />
 			<split parallelProcessing="false">
 				<simple>{{org_name}}</simple>
-				<to uri="direct:invokeRepoCheck" />
+				<!--<to uri="direct:invokeRepoDetails" /> -->
+				<setHeader name="apiEndpointInfo">
+					<simple><![CDATA[{{api_baseurl}}]]></simple>
+				</setHeader>
+				<script>
+					<groovy>
+		            	<![CDATA[
+		            	import groovy.json.*
+		            	import java.utils.*;
+		            	import org.apache.camel.Exchange;		            	
+		            	
+		            	def apiEndpoint = exchange.getMessage().getHeader("apiEndpointInfo",String.class)		            	
+		            	exchange.setProperty("apiEndpoint",apiEndpoint)
+		            	]]>
+		            </groovy>
+				</script>
+				<log message=">>> apiEndpointInfo : ${exchange.getProperty(apiEndpoint)}" />
+				<to uri="direct:invokeApiEndpoint" />
+				<to uri="direct:manipulateJson" />
 			</split>
 		</route>
 
-		<route id="invokeRepoCheck">
-			<from uri="direct:invokeRepoCheck" />
+		<route id="manipulateJson">
+			<from uri="direct:manipulateJson" />
+			<log message=">>> invoked SplitAndLoop for Json array" />
+
+			<split>
+
+				<jsonpath>$.[*]</jsonpath>
+				<log message=">>> ${body.[url]} \n \n \n" />
+				<script>
+					<groovy>
+		            	<![CDATA[
+		            	import groovy.json.*
+		            	import java.utils.*;
+		            	import org.apache.camel.Exchange;
+		            	import org.json.simple.JSONObject;
+		            	
+		            	def dummyprop = exchange.getMessage().getBody()
+		            	def repoUrlList = exchange.getProperty('repoUrlList')
+		            	repoUrlList << dummyprop['url'] + '/branches'
+		            	exchange.setProperty("repoUrlList",repoUrlList)
+		            	exchange.setProperty("dummyprop",repoUrlList)
+		            	]]>
+		            </groovy>
+				</script>
+				<log
+					message=">>>dummy prop ${exchange.getProperty('dummyprop')}" />
+				<delay>
+					<constant>1000</constant>
+				</delay>
+			</split>
+			<split>
+				<simple>${exchange.getProperty('repoUrlList')}</simple>
+				<log message=">>> repo_url : ${body} \n \n \n" />
+				<script>
+					<groovy>
+		            	<![CDATA[
+		            	import groovy.json.*
+		            	import java.utils.*;
+		            	import org.apache.camel.Exchange;		            	
+		            	
+		            	def apiEndpoint = exchange.getMessage().getBody()		            	
+		            	exchange.setProperty("apiEndpoint",apiEndpoint)
+		            	]]>
+		            </groovy>
+				</script>
+				<log
+					message=">>> apiEndpoint ${exchange.getProperty('apiEndpoint')}" />
+				<to uri="direct:invokeApiEndpoint" />
+				<delay>
+					<constant>1000</constant>
+				</delay>
+			</split>
+		</route>
+
+		<route id="invokeApiEndpoint">
+			<from uri="direct:invokeApiEndpoint" />
 			<delay>
 				<constant>1000</constant>
 			</delay>
 			<log
-				message=">>> ${date-with-timezone:now:IST:yyyy-MM-dd'T'HH:mm:ss} invoked invokeRepoCheck route for planetID :${body}" />
-
+				message=">>> ${date-with-timezone:now:IST:yyyy-MM-dd'T'HH:mm:ss} invoked invokeRepoBranchDetails route for repoURL :${body}" />
 
 			<setHeader name="Content-Type">
 				<constant><![CDATA[application/json]]></constant>
@@ -65,7 +136,7 @@
 				<constant><![CDATA[GET]]></constant>
 			</setHeader>
 			<setHeader name="Exchange.HTTP_URI">
-				<simple><![CDATA[{{api_baseurl}}]]></simple>
+				<simple><![CDATA[${exchange.getProperty('apiEndpoint')}]]></simple>
 			</setHeader>
 			<script>
 				<groovy>
@@ -126,45 +197,6 @@
 			</script>
 
 			<log message=">>> ${exchange.getProperty(apiResponseCode)} " />
-			<to uri="direct:manipulateJson" />
-		</route>
-
-		<route id="manipulateJson">
-			<from uri="direct:manipulateJson" />
-			<log message=">>> invoked SplitAndLoop for Json array" />
-
-			<split>
-
-				<jsonpath>$.[*]</jsonpath>
-				<log message=">>> ${body.[url]} \n \n \n" />
-				<script>
-					<groovy>
-		            	<![CDATA[
-		            	import groovy.json.*
-		            	import java.utils.*;
-		            	import org.apache.camel.Exchange;
-		            	import org.json.simple.JSONObject;
-		            	
-		            	def dummyprop = exchange.getMessage().getBody()
-		            	def repoUrlList = exchange.getProperty('repoUrlList')
-		            	repoUrlList << dummyprop['url']
-		            	exchange.setProperty("repoUrlList",repoUrlList)
-		            	exchange.setProperty("dummyprop",repoUrlList)
-		            	]]>
-		            </groovy>
-				</script>
-				<log message=">>>dummy prop ${exchange.getProperty('dummyprop')}" />
-				<delay>
-					<constant>1000</constant>
-				</delay>
-			</split>
-			<split>
-				<simple>${exchange.getProperty('repoUrlList')}</simple>
-				<log message=">>> repo_url : ${body} \n \n \n" />							
-				<delay>
-					<constant>1000</constant>
-				</delay>
-			</split>
 		</route>
 
 		<route id="logStmts">
